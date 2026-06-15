@@ -16,8 +16,6 @@ public class CliRunner implements CommandLineRunner {
         this.ollamaClient = ollamaClient;
     }
 
-    public CliRunner() {}
-
     @Override
     public void run(String... args) throws Exception {
 

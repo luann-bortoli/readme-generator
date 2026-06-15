@@ -1,12 +1,14 @@
 package io.github.ReadmeGenerator;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+@Component
 public class OllamaClient {
 
     private final HttpClient client;
@@ -22,7 +24,7 @@ public class OllamaClient {
     private String ollamaModel;
 
     private String loadSystemPrompt() {
-        try (var is = new org.springframework.core.io.ClassPathResource("SystemPrompt.txt").getInputStream()) {
+        try (var is = new org.springframework.core.io.ClassPathResource("SystemPrompt").getInputStream()) {
             return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new RuntimeException("Failed to load system prompt", e);
@@ -45,6 +47,7 @@ public class OllamaClient {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             System.out.println(response.statusCode());
+            System.out.println(response.body());
             return response.body();
 
         } catch (Exception e)

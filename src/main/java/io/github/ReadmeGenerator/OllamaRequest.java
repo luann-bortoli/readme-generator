@@ -10,4 +10,15 @@ public class OllamaRequest {
         this.prompt = prompt;
         this.stream = stream;
     }
+
+    @Override
+    public String toString() {
+        return """
+        {
+          "model": "%s",
+          "prompt": "%s",
+          "stream": %s
+        }
+        """.formatted(model, prompt.replace("\"", "\\\""), stream);
+    }
 }
