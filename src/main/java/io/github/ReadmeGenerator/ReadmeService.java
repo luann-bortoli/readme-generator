@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -142,6 +143,24 @@ public class ReadmeService {
         }
 
         return context.toString();
+
+    }
+
+    public Path writeReadme(String targetPath, String markdown) throws IOException {
+
+        Path projectPath = Paths.get(targetPath).toAbsolutePath();
+        Path readmePath = projectPath.resolve("README.md");
+
+        Files.writeString(
+                readmePath,
+                markdown,
+                StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE
+        );
+
+        return readmePath;
 
     }
 
