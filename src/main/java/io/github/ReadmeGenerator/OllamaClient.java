@@ -1,5 +1,7 @@
 package io.github.ReadmeGenerator;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,9 +14,11 @@ import java.net.http.HttpResponse;
 public class OllamaClient {
 
     private final HttpClient client;
+    private final ObjectMapper objectMapper;
 
-    public OllamaClient(HttpClient client) {
+    public OllamaClient(HttpClient client, ObjectMapper objectMapper) {
         this.client = client;
+        this.objectMapper = objectMapper;
     }
 
     @Value("${ollama.url}")
@@ -38,23 +42,35 @@ public class OllamaClient {
         try {
 
             OllamaRequest body = new OllamaRequest(ollamaModel, prompt, false);
+            String jsonBody = objectMapper.writeValueAsString(body);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(ollamaUrl))
-                    .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            System.out.println(response.statusCode());
-            System.out.println(response.body());
-            return response.body();
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new RuntimeException("Ollama returned status " + response.statusCode() + ": " + response.body());
+            }
+
+            OllamaResponse ollamaResponse = objectMapper.readValue(response.body(), OllamaResponse.class);
+
+            System.out.println(ollamaResponse.response());
+            return ollamaResponse.response();
 
         } catch (Exception e)
         {
             System.out.println("failed to call api");
             throw new RuntimeException("Failed to call api... \n" + e);
         }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record OllamaResponse(String response) {
     }
 
 }
