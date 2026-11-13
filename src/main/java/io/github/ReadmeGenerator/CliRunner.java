@@ -3,7 +3,6 @@ package io.github.ReadmeGenerator;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Scanner;
 
 @Component
@@ -29,8 +28,7 @@ public class CliRunner implements CommandLineRunner {
             System.out.println("write the path");
             String path = scanner.nextLine();
 
-            List<String> projectFiles = readmeService.walkPath(path);
-            String projectContext = String.join("\n", projectFiles);
+            String projectContext = readmeService.buildProjectContext(path);
 
             ollamaClient.generate(projectContext);
 

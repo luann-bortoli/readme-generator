@@ -18,6 +18,9 @@ import static java.nio.file.Files.walkFileTree;
 @Service
 public class ReadmeService {
 
+    private static final int MAX_PROJECT_CONTEXT_CHARS = 60_000;
+    private static final int MAX_FILE_CONTENT_CHARS = 12_000;
+
     private static final Set<String> IGNORED_DIRECTORIES = Set.of(
             ".git",
             ".idea",
@@ -98,6 +101,54 @@ public class ReadmeService {
         Path path = Paths.get(targetPath).toAbsolutePath();
         List<String> fileContents = new ArrayList<>();
 
+        for (ProjectFile projectFile : collectProjectFiles(path)) {
+            fileContents.add(projectFile.content());
+        }
+
+        return fileContents;
+
+    }
+
+    public String buildProjectContext(String targetPath) {
+
+        Path path = Paths.get(targetPath).toAbsolutePath();
+        List<ProjectFile> projectFiles = collectProjectFiles(path);
+
+        StringBuilder context = new StringBuilder();
+        context.append("Project path: ").append(path).append("\n\n");
+        context.append("Files included:\n");
+
+        for (ProjectFile projectFile : projectFiles) {
+            context.append("- ").append(projectFile.relativePath()).append("\n");
+        }
+
+        context.append("\nProject files:\n\n");
+
+        for (ProjectFile projectFile : projectFiles) {
+            String content = truncateFileContent(projectFile.content());
+            String section = """
+                    --- FILE: %s ---
+                    %s
+                    --- END FILE ---
+
+                    """.formatted(projectFile.relativePath(), content);
+
+            if (context.length() + section.length() > MAX_PROJECT_CONTEXT_CHARS) {
+                context.append("[Project context truncated because it reached the maximum prompt size.]\n");
+                break;
+            }
+
+            context.append(section);
+        }
+
+        return context.toString();
+
+    }
+
+    private List<ProjectFile> collectProjectFiles(Path path) {
+
+        List<ProjectFile> projectFiles = new ArrayList<>();
+
         try{
 
             walkFileTree(path, new SimpleFileVisitor<Path>() {
@@ -113,7 +164,11 @@ public class ReadmeService {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (attrs.isRegularFile() && shouldReadFile(file)) {
-                        fileContents.add(reader(file));
+                        String relativePath = path.relativize(file)
+                                .toString()
+                                .replace("\\", "/");
+
+                        projectFiles.add(new ProjectFile(relativePath, reader(file)));
                     }
 
                     return FileVisitResult.CONTINUE;
@@ -123,11 +178,19 @@ public class ReadmeService {
         } catch (IOException e){
 
             System.out.println(e.getMessage());
-        } finally {
-
-            return fileContents;
         }
 
+        return projectFiles;
+
+    }
+
+    private String truncateFileContent(String content) {
+        if (content.length() <= MAX_FILE_CONTENT_CHARS) {
+            return content;
+        }
+
+        return content.substring(0, MAX_FILE_CONTENT_CHARS)
+                + "\n[File truncated because it reached the maximum per-file prompt size.]\n";
     }
 
     private boolean shouldIgnoreDirectory(Path directory) {
@@ -144,6 +207,9 @@ public class ReadmeService {
         }
 
         return INCLUDED_EXTENSIONS.stream().anyMatch(fileName::endsWith);
+    }
+
+    private record ProjectFile(String relativePath, String content) {
     }
 
 }
