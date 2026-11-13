@@ -1,0 +1,67 @@
+# README Generator
+
+A simple CLI application that reads a project folder, sends the main project files to Ollama, and writes a generated `README.md` file back to that project.
+
+## Requirements
+
+- Java 17
+- Maven
+- Ollama running locally
+- The configured Ollama model installed
+
+Default model:
+
+```properties
+ollama.model=gemma:2b
+```
+
+Install it with:
+
+```bash
+ollama pull gemma:2b
+```
+
+## Configuration
+
+The Ollama settings are in:
+
+```text
+src/main/resources/application.properties
+```
+
+Default values:
+
+```properties
+ollama.model=gemma:2b
+ollama.url=http://localhost:11434/api/generate
+```
+
+## Run
+
+```bash
+mvn spring-boot:run
+```
+
+Then enter the path of the project you want to analyze:
+
+```text
+C:\path\to\your\project
+```
+
+Type `exit` to stop the application.
+
+## What It Does
+
+1. Asks for a project path.
+2. Reads relevant source and config files.
+3. Builds a structured prompt with file paths and contents.
+4. Sends the prompt to Ollama.
+5. Saves the generated response as `README.md` in the target project.
+
+If `README.md` already exists in the target project, it will be overwritten.
+
+## Build
+
+```bash
+mvn -DskipTests compile
+```
